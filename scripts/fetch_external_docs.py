@@ -1,10 +1,10 @@
 """Download external Markdown contracts for MONARCH operations.
 
-This script pulls:
-- Contract_Agreement.md from tomwechsler/Ethical_Hacking_and_Penetration_Testing
-- All Markdown files from cure53/Contracts via the repository archive
+This script pulls **all Markdown files** from the following sources and stores
+them under ``ops_docs/`` while preserving their relative paths:
 
-Downloaded files are stored under ops_docs/ with source-based subfolders.
+* ``tomwechsler/Ethical_Hacking_and_Penetration_Testing``
+* ``cure53/Contracts``
 """
 from __future__ import annotations
 
@@ -13,19 +13,15 @@ import sys
 import urllib.request
 import zipfile
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Sequence
 
 ROOT = Path(__file__).resolve().parent.parent
 DOCS_ROOT = ROOT / "ops_docs"
 
-TOMWECHSLER_URL = (
-    "https://raw.githubusercontent.com/"
-    "tomwechsler/Ethical_Hacking_and_Penetration_Testing/"
-    "main/Penetration_Testing/Contract_Agreement.md"
-)
-CURE53_ARCHIVE_URL = (
-    "https://github.com/cure53/Contracts/archive/refs/heads/master.zip"
-)
+ARCHIVES = {
+    "tomwechsler": "https://github.com/tomwechsler/Ethical_Hacking_and_Penetration_Testing/archive/refs/heads/main.zip",
+    "cure53": "https://github.com/cure53/Contracts/archive/refs/heads/master.zip",
+}
 
 
 def ensure_directory(path: Path) -> None:
@@ -35,51 +31,68 @@ def ensure_directory(path: Path) -> None:
 
 def fetch_bytes(url: str) -> bytes:
     """Retrieve raw bytes from a URL."""
+
     with urllib.request.urlopen(url) as response:
         return response.read()
 
 
-def save_contract_agreement() -> None:
-    destination = DOCS_ROOT / "tomwechsler" / "Contract_Agreement.md"
-    ensure_directory(destination.parent)
-    print(f"Downloading Contract_Agreement.md to {destination} ...")
-    content = fetch_bytes(TOMWECHSLER_URL)
-    destination.write_bytes(content)
-    print("Saved tomwechsler contract.")
+def extract_markdown_from_archive(
+    archive_bytes: bytes, destination_root: Path, drop_parts: int = 1
+) -> None:
+    """Extract all Markdown files from an archive into ``destination_root``.
 
+    Parameters
+    ----------
+    archive_bytes:
+        Raw bytes of a zip archive.
+    destination_root:
+        Base directory under which files are written.
+    drop_parts:
+        Number of path parts to drop from the start of each archive member
+        (useful for removing the top-level folder included by GitHub archives).
+    """
 
-def extract_cure53_contracts() -> None:
-    ensure_directory(DOCS_ROOT / "cure53")
-    print("Downloading cure53 Contracts archive ...")
-    archive_bytes = fetch_bytes(CURE53_ARCHIVE_URL)
     with zipfile.ZipFile(io.BytesIO(archive_bytes)) as archive:
         members = [
-            member for member in archive.infolist() if member.filename.lower().endswith(".md")
+            member
+            for member in archive.infolist()
+            if member.filename.lower().endswith(".md")
         ]
         if not members:
             print("No Markdown files found in archive.")
             return
+
         for member in members:
-            relative_path = Path(member.filename).parts[1:]  # drop top-level folder
-            destination = DOCS_ROOT / "cure53" / Path(*relative_path)
+            relative_parts: Sequence[str] = Path(member.filename).parts[drop_parts:]
+            destination = destination_root / Path(*relative_parts)
+
             if member.is_dir():
                 ensure_directory(destination)
                 continue
+
             ensure_directory(destination.parent)
             print(f"Extracting {destination} ...")
             destination.write_bytes(archive.read(member))
-    print("Saved cure53 contracts.")
+
+
+def fetch_repo_markdown(source_key: str, archive_url: str) -> None:
+    """Download and extract Markdown files for a given repository archive."""
+
+    destination = DOCS_ROOT / source_key
+    ensure_directory(destination)
+
+    print(f"Downloading {source_key} archive ...")
+    archive_bytes = fetch_bytes(archive_url)
+    extract_markdown_from_archive(archive_bytes, destination)
+    print(f"Saved {source_key} Markdown files.")
 
 
 def main(argv: Iterable[str] | None = None) -> int:
     try:
-        save_contract_agreement()
+        for source_key, archive_url in ARCHIVES.items():
+            fetch_repo_markdown(source_key, archive_url)
     except Exception as exc:  # pragma: no cover - network failures are runtime concerns
-        print(f"Failed to download Contract_Agreement.md: {exc}", file=sys.stderr)
-    try:
-        extract_cure53_contracts()
-    except Exception as exc:  # pragma: no cover - network failures are runtime concerns
-        print(f"Failed to download cure53 contracts: {exc}", file=sys.stderr)
+        print(f"Failed to download Markdown files: {exc}", file=sys.stderr)
     return 0
 
 
