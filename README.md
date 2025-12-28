@@ -1,7 +1,8 @@
 # MONARCH
 
 Interactive CLI educational manual for the Lockheed Martin Cyber Kill Chain using the Cement framework, plus an embedded Markdown
-browser for the ethical-hacking docs pulled into `ops_docs/`.
+browser for the ethical-hacking docs pulled into `ops_docs/`. The dashboard now ships with a retro, MSFConsole-inspired look so you
+can keep a persistent session open while bouncing between stages and docs.
 
 ## Setup
 
@@ -17,10 +18,12 @@ pip install -r requirements.txt
 python killchain_cli.py
 ```
 
-The dashboard auto-resizes the terminal to a wide/tall layout where supported. From the main menu you can:
+The dashboard auto-resizes the terminal to a wide/tall layout where supported. From the main menu you get a DOS-style header,
+two-column stage table, and a command prompt that feels like MSFConsole. Core commands:
 
-- Enter a stage number to view Kill Chain details.
+- Enter `1-7` to view a Kill Chain stage.
 - Type `d` to enter the Markdown browser for `ops_docs/`.
+- Type `h` to toggle the inline help block if you want more screen real estate.
 - Type `q` or press `Ctrl+C` to exit gracefully.
 
 ### Markdown browser controls

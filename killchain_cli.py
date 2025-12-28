@@ -147,18 +147,23 @@ def open_in_editor(editor: str, path: Path) -> None:
 
 
 def render_docs_menu(files: list[Path], root: Path) -> None:
-    """Render the Markdown browser menu."""
+    """Render the Markdown browser menu with a console-style dash."""
 
-    print(f"{BOLD}{CYAN}MONARCH Markdown Browser{RESET}")
-    print(f"Source root: {root}\n")
+    header = f"{BOLD}{CYAN}╔════════════════════════════════════════════════════════════════════╗{RESET}"
+    title = f"{BOLD}{CYAN}║   MONARCH Markdown Browser (root: {root}){RESET}"
+    footer = f"{BOLD}{CYAN}╚════════════════════════════════════════════════════════════════════╝{RESET}"
+
+    print(header)
+    print(title)
+    print(footer)
+
     if not files:
         print("No Markdown files found. Populate ops_docs/ with fetch_external_docs.py.")
         return
 
     for index, file in enumerate(files, start=1):
-        print(f"{index}. {file.relative_to(root)}")
-    print("\nCommands: <number> to page, 'vim <number>', 'nano <number>', 'b' to go back")
-    print("q. Quit")
+        print(f"{BOLD}{index:>3}.{RESET} {file.relative_to(root)}")
+    print("\nCommands: <number> to page, 'vim <number>', 'nano <number>', 'b' to go back, 'q' to quit")
 
 
 def browse_markdown(root: Path = DEFAULT_DOC_ROOT) -> None:
@@ -210,9 +215,55 @@ def browse_markdown(root: Path = DEFAULT_DOC_ROOT) -> None:
             continue
 
         page_text(content)
-def format_stage_line(index: int, stage: str) -> str:
-    """Return a styled menu line for a stage."""
-    return f"{BOLD}{index}. {CYAN}{stage}{RESET}"
+
+
+def banner() -> str:
+    """Return a retro dash-style banner inspired by MSFConsole."""
+
+    lines = [
+        f"{BOLD}{CYAN}╔═══════════════════════════════════════════════════════════════════════╗{RESET}",
+        f"{BOLD}{CYAN}║  MONARCH :: KALI-KILLCHAIN EDUCATIONAL MANUAL                     v1.0 ║{RESET}",
+        f"{BOLD}{CYAN}║  Inspired by MSFConsole / DOS dashboards — stay ethical, stay sharp.   ║{RESET}",
+        f"{BOLD}{CYAN}╚═══════════════════════════════════════════════════════════════════════╝{RESET}",
+    ]
+    return "\n".join(lines)
+
+
+def render_commands_help() -> str:
+    """Return a help block describing available commands."""
+
+    rows = [
+        f"{BOLD}{CYAN}[ COMMANDS ]{RESET}",
+        f" {GREEN}1-7{RESET}   View a Kill Chain stage",
+        f" {GREEN}d{RESET}     Docs browser (Markdown)",
+        f" {GREEN}h{RESET}     Toggle this help block",
+        f" {GREEN}q{RESET}     Quit dashboard",
+        "",
+        f"{BOLD}{CYAN}[ DOCS BROWSER ]{RESET}",
+        " number  Page a file (uses $PAGER)",
+        " vim N  Open file N in vim",
+        " nano N Open file N in nano",
+        " b      Back to dashboard",
+        " q      Quit",
+    ]
+    return "\n".join(rows)
+
+
+def render_stage_table(stages: list[str]) -> str:
+    """Render stages as a two-column grid for a compact dash look."""
+
+    col_width = 32
+    padded = [f"{BOLD}{str(i+1).rjust(2)}{RESET} {CYAN}{stage}{RESET}" for i, stage in enumerate(stages)]
+    # Split into two columns
+    left = padded[::2]
+    right = padded[1::2]
+    # Pad shorter column
+    while len(left) > len(right):
+        right.append("")
+    lines: list[str] = []
+    for lval, rval in zip(left, right):
+        lines.append(f" {lval.ljust(col_width)}{rval}")
+    return "\n".join(lines)
 
 
 def render_stage(stage: str) -> None:
@@ -235,26 +286,33 @@ class KillChainController(Controller):
     @ex(help="Launch the interactive Kill Chain tutorial")
     def default(self) -> None:
         stages = list(kill_chain_data.keys())
+        show_help = True
         auto_resize_terminal()
         try:
             while True:
                 clear_screen()
-                print(f"{BOLD}{CYAN}KALI-KILLCHAIN EDUCATIONAL MANUAL{RESET}\n")
-                for idx, stage in enumerate(stages, start=1):
-                    print(format_stage_line(idx, stage))
-                print(f"{BOLD}{CYAN}d. Browse Markdown docs{RESET}")
-                print(f"{BOLD}{CYAN}q. Quit{RESET}\n")
+                print(banner())
+                print()
+                print(render_stage_table(stages))
+                print()
+                if show_help:
+                    print(render_commands_help())
+                    print()
+                prompt = f"{BOLD}{CYAN}monarch{RESET} > "
+                choice = input(prompt).strip().lower()
 
-                choice = input("Select a stage by number (or q to quit): ").strip().lower()
                 if choice in {"q", "quit", "exit"}:
                     break
+                if choice in {"h", "help"}:
+                    show_help = not show_help
+                    continue
                 if choice in {"d", "docs", "doc"}:
                     browse_markdown(DEFAULT_DOC_ROOT)
                     continue
                 if not choice:
                     continue
                 if not choice.isdigit():
-                    print(f"{RED}Please enter a valid number or 'q' to quit.{RESET}")
+                    print(f"{RED}Please enter a valid number, 'd' for docs, or 'q' to quit.{RESET}")
                     input("Press Enter to continue.")
                     continue
 
