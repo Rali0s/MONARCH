@@ -28,3 +28,13 @@ python scripts/fetch_external_docs.py
 ```
 
 The script retrieves all Markdown files from the `tomwechsler/Ethical_Hacking_and_Penetration_Testing` repository and all Markdown files from the `cure53/Contracts` repository while preserving their relative paths. If the environment blocks outbound network access, rerun the script when connectivity is available.
+
+## Browse downloaded Markdown files
+
+Use the Markdown reader to sort and view the downloaded ethical-hacking documents:
+
+```bash
+python scripts/md_reader.py
+```
+
+Pass `--root <path>` to point the reader at an alternate directory if you keep Markdown files outside `ops_docs/`.
