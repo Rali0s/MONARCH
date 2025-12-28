@@ -1,6 +1,7 @@
 # MONARCH
 
-Interactive CLI educational manual for the Lockheed Martin Cyber Kill Chain using the Cement framework.
+Interactive CLI educational manual for the Lockheed Martin Cyber Kill Chain using the Cement framework, plus an embedded Markdown
+browser for the ethical-hacking docs pulled into `ops_docs/`.
 
 ## Setup
 
@@ -16,8 +17,19 @@ pip install -r requirements.txt
 python killchain_cli.py
 ```
 
-Select a stage by entering its number, view the description, tooling, and methodology, then press Enter to return to the menu. Press
-`q` or `Ctrl+C` to exit gracefully.
+The dashboard auto-resizes the terminal to a wide/tall layout where supported. From the main menu you can:
+
+- Enter a stage number to view Kill Chain details.
+- Type `d` to enter the Markdown browser for `ops_docs/`.
+- Type `q` or press `Ctrl+C` to exit gracefully.
+
+### Markdown browser controls
+
+Within the embedded Markdown reader:
+
+- Enter a number to page through a file (uses `$PAGER` or `less -R` for scrollable output).
+- Use `vim <number>` or `nano <number>` to open a document in your preferred editor before returning to the menu.
+- Type `b` to go back to the Kill Chain menu or `q` to quit entirely.
 
 ## External contract references
 
@@ -31,7 +43,7 @@ The script retrieves all Markdown files from the `tomwechsler/Ethical_Hacking_an
 
 ## Browse downloaded Markdown files
 
-Use the Markdown reader to sort and view the downloaded ethical-hacking documents:
+Use the Markdown reader to sort and view the downloaded ethical-hacking documents from outside the dashboard as well:
 
 ```bash
 python scripts/md_reader.py
