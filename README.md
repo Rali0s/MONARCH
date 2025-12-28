@@ -2,7 +2,7 @@
 
 Interactive CLI educational manual for the Lockheed Martin Cyber Kill Chain using the Cement framework, plus an embedded Markdown
 browser for the ethical-hacking docs pulled into `ops_docs/`. The dashboard now ships with a retro, MSFConsole-inspired look so you
-can keep a persistent session open while bouncing between stages and docs.
+can keep a persistent session open while bouncing between stages and docs. Each stage view now surfaces MITRE ATT&CK mappings, tool commands, and defender notes for production-ready study sessions.
 
 ## Setup
 
@@ -21,7 +21,7 @@ python killchain_cli.py
 The dashboard auto-resizes the terminal to a wide/tall layout where supported. From the main menu you get a DOS-style header,
 two-column stage table, and a command prompt that feels like MSFConsole. Core commands:
 
-- Enter `1-7` to view a Kill Chain stage.
+- Enter `1-7` to view a Kill Chain stage with MITRE ATT&CK tactics/techniques, curated tool commands, and defender notes.
 - Type `d` to enter the Markdown browser for `ops_docs/`.
 - Type `h` to toggle the inline help block if you want more screen real estate.
 - Type `q` or press `Ctrl+C` to exit gracefully.

