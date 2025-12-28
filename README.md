@@ -1,6 +1,6 @@
 # MONARCH
 
-Interactive CLI educational manual for the Lockheed Martin Cyber Kill Chain using `simple-term-menu`.
+Interactive CLI educational manual for the Lockheed Martin Cyber Kill Chain using the Cement framework.
 
 ## Setup
 
@@ -16,8 +16,8 @@ pip install -r requirements.txt
 python killchain_cli.py
 ```
 
-Use the arrow keys to select a stage of the Kill Chain and press Enter to read its description, tooling, and methodology. Press
-`Ctrl+C` or choose **Quit** to exit gracefully.
+Select a stage by entering its number, view the description, tooling, and methodology, then press Enter to return to the menu. Press
+`q` or `Ctrl+C` to exit gracefully.
 
 ## External contract references
 

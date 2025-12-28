@@ -1,17 +1,18 @@
 """Interactive CLI teaching the Lockheed Martin Cyber Kill Chain.
 
-This script uses the simple-term-menu library for menu navigation and
-ANSI escape codes for simple coloring. It highlights each stage of the
-Kill Chain alongside relevant Kali Linux tooling and methodology notes.
+This script uses the Cement framework for command routing and ANSI escape
+codes for simple coloring. It highlights each stage of the Kill Chain
+alongside relevant Kali Linux tooling and methodology notes.
 """
+from cement import App, Controller, ex
 import os
-from simple_term_menu import TerminalMenu
 
 # ANSI color codes for simple styling.
 BOLD = "\033[1m"
 CYAN = "\033[36m"
 GREEN = "\033[32m"
 YELLOW = "\033[33m"
+RED = "\033[31m"
 RESET = "\033[0m"
 
 kill_chain_data = {
@@ -75,14 +76,12 @@ def clear_screen() -> None:
     os.system("cls" if os.name == "nt" else "clear")
 
 
-def build_menu() -> TerminalMenu:
-    """Create the TerminalMenu with styling and title."""
-    stages = list(kill_chain_data.keys()) + ["Quit"]
-    title = f"{BOLD}{CYAN}KALI-KILLCHAIN EDUCATIONAL MANUAL{RESET}\n"
-    return TerminalMenu(stages, title=title, menu_cursor="➤ ", menu_highlight_style=("fg_cyan", "bold"))
+def format_stage_line(index: int, stage: str) -> str:
+    """Return a styled menu line for a stage."""
+    return f"{BOLD}{index}. {CYAN}{stage}{RESET}"
 
 
-def display_stage(stage: str) -> None:
+def render_stage(stage: str) -> None:
     """Render the selected Kill Chain stage details."""
     info = kill_chain_data[stage]
     clear_screen()
@@ -94,26 +93,58 @@ def display_stage(stage: str) -> None:
     input("Press Enter to return to menu.")
 
 
-def run_menu() -> None:
-    """Run the interactive menu loop with graceful exit handling."""
-    menu = build_menu()
-    try:
-        while True:
+class KillChainController(Controller):
+    class Meta:
+        label = "base"
+        help = "KALI-KILLCHAIN EDUCATIONAL MANUAL"
+
+    @ex(help="Launch the interactive Kill Chain tutorial")
+    def default(self) -> None:
+        stages = list(kill_chain_data.keys())
+        try:
+            while True:
+                clear_screen()
+                print(f"{BOLD}{CYAN}KALI-KILLCHAIN EDUCATIONAL MANUAL{RESET}\n")
+                for idx, stage in enumerate(stages, start=1):
+                    print(format_stage_line(idx, stage))
+                print(f"{BOLD}{CYAN}q. Quit{RESET}\n")
+
+                choice = input("Select a stage by number (or q to quit): ").strip().lower()
+                if choice in {"q", "quit", "exit"}:
+                    break
+                if not choice:
+                    continue
+                if not choice.isdigit():
+                    print(f"{RED}Please enter a valid number or 'q' to quit.{RESET}")
+                    input("Press Enter to continue.")
+                    continue
+
+                index = int(choice) - 1
+                if index < 0 or index >= len(stages):
+                    print(f"{RED}That selection is out of range.{RESET}")
+                    input("Press Enter to continue.")
+                    continue
+
+                render_stage(stages[index])
+        except KeyboardInterrupt:
+            pass
+        finally:
             clear_screen()
-            selection_index = menu.show()
-            if selection_index is None:
-                # User pressed Escape or Ctrl+C inside the menu.
-                break
-            stages = list(kill_chain_data.keys())
-            if selection_index >= len(stages):
-                break
-            display_stage(stages[selection_index])
-    except KeyboardInterrupt:
-        pass
-    finally:
-        clear_screen()
-        print("Goodbye! Keep learning and stay safe.")
+            print("Goodbye! Keep learning and stay safe.")
+
+
+class KillChainApp(App):
+    class Meta:
+        label = "killchain"
+        base_controller = "base"
+        handlers = [KillChainController]
+        exit_on_close = True
+
+
+def run_app() -> None:
+    with KillChainApp() as app:
+        app.run()
 
 
 if __name__ == "__main__":
-    run_menu()
+    run_app()
